@@ -2,7 +2,7 @@
 
 namespace GDNetworkJSONService.LocalLogStorageDB
 {
-    internal class LogStorageDbGlobals
+    internal class LocalLogStorageDBGlobals
     {
         public static string ConnectionString { get; set; }
 
@@ -12,12 +12,12 @@ namespace GDNetworkJSONService.LocalLogStorageDB
 
         //public static int MaxLockTrys { get; set; } = 5;
 
-        public static SQLiteConnection OpenNewConnection()
+/*        public static SQLiteConnection OpenNewConnection()
         {
             var dbConnection = new SQLiteConnection(ConnectionString);
             dbConnection.Open();
             return dbConnection;
-        }
+        }*/
 
         // Code does not appear to be necessary as SQLite appears to handle 
         // SQLite error (5): database is locked

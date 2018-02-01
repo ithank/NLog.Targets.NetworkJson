@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Data;
 using System.Data.SQLite;
-using System.Net;
-using NLog;
 using NLog.Targets.NetworkJSON.ExtensionMethods;
 
-namespace GDNetworkJSONService.LocalLogStorageDB
+namespace NLog.Targets.NetworkJSON.LogStorageDB
 {
-/*
-    internal class LogStorageTable
+    public class  LogStorageTable
     {
         public const string TableName = "LogStorage";
-        
+
         public class Columns
         {
             public static ColumnInfo MessageId { get; } = new ColumnInfo(nameof(MessageId), "INTEGER PRIMARY KEY ASC", DbType.Int64, 0);
@@ -28,7 +25,7 @@ namespace GDNetworkJSONService.LocalLogStorageDB
             var tableName = cmd.ExecuteScalar()?.ToString();
             return (!tableName.IsNullOrEmpty());
         }
-        
+
         public static void CreateTable(SQLiteConnection dbConnection)
         {
             var tableCreateSql = $"CREATE TABLE {TableName} ({Columns.MessageId.ColumnName} {Columns.MessageId.ColumnDDL}, {Columns.Endpoint.ColumnName} {Columns.Endpoint.ColumnDDL}, {Columns.LogMessage.ColumnName} {Columns.LogMessage.ColumnDDL}, {Columns.CreatedOn.ColumnName} {Columns.CreatedOn.ColumnDDL}, {Columns.RetryCount.ColumnName} {Columns.RetryCount.ColumnDDL})";
@@ -92,7 +89,7 @@ namespace GDNetworkJSONService.LocalLogStorageDB
         {
             var dataInsertSql = $"UPDATE {TableName} SET {Columns.RetryCount.ColumnName} = {retryCount} WHERE {Columns.MessageId.ColumnName} = {messageId}";
             var cmd = new SQLiteCommand(dataInsertSql, dbConnection);
-            
+
             return cmd.ExecuteNonQuery();
         }
 
@@ -111,5 +108,4 @@ namespace GDNetworkJSONService.LocalLogStorageDB
             return (long)cmd.ExecuteScalar();
         }
     }
-*/
 }

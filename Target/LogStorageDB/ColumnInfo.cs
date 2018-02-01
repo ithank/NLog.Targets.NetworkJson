@@ -1,9 +1,9 @@
 ﻿using System.Data;
 using System.Data.SQLite;
 
-namespace GDNetworkJSONService.LocalLogStorageDB
+namespace NLog.Targets.NetworkJSON.LogStorageDB
 {
-/*    internal class ColumnInfo
+    public class ColumnInfo
     {
         public ColumnInfo(string columnName, string columnDDL, DbType parameterType, int columnIndex)
         {
@@ -24,5 +24,5 @@ namespace GDNetworkJSONService.LocalLogStorageDB
         {
             return new SQLiteParameter(ParameterName, ParameterType, ColumnName);
         }
-    }*/
+    }
 }

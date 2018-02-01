@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Threading;
-using GDNetworkJSONService.LocalLogStorageDB;
 using NLog.Targets.NetworkJSON;
+using NLog.Targets.NetworkJSON.LogStorageDB;
 
 namespace GDNetworkJSONService.ServiceThreads
 {

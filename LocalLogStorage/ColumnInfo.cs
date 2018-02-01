@@ -1,9 +1,14 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace GDNetworkJSONService.LocalLogStorageDB
+namespace LocalLogStorage
 {
-/*    internal class ColumnInfo
+    public class ColumnInfo
     {
         public ColumnInfo(string columnName, string columnDDL, DbType parameterType, int columnIndex)
         {
@@ -24,5 +29,5 @@ namespace GDNetworkJSONService.LocalLogStorageDB
         {
             return new SQLiteParameter(ParameterName, ParameterType, ColumnName);
         }
-    }*/
+    }
 }

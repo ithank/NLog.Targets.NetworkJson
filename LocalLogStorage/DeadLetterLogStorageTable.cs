@@ -1,12 +1,15 @@
-﻿using System;
+﻿using LocalLogStorage.ExtensionMethods;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
-using NLog.Targets.NetworkJSON.ExtensionMethods;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace GDNetworkJSONService.LocalLogStorageDB
+namespace LocalLogStorage
 {
-/*
-    internal class DeadLetterLogStorageTable
+    public class DeadLetterLogStorageTable
     {
         public const string TableName = "DeadLetterLogStorage";
 
@@ -50,7 +53,7 @@ namespace GDNetworkJSONService.LocalLogStorageDB
             param = Columns.CreatedOn.GetParamterForColumn();
             param.Value = createdOn;
             cmd.Parameters.Add(param);
-            
+
             param = Columns.RetryCount.GetParamterForColumn();
             param.Value = retryCount;
             cmd.Parameters.Add(param);
@@ -66,9 +69,8 @@ namespace GDNetworkJSONService.LocalLogStorageDB
         {
             var dataSelectSql = $"SELECT COUNT(*) FROM {TableName}";
             var cmd = new SQLiteCommand(dataSelectSql, dbConnection);
-            
+
             return (long)cmd.ExecuteScalar();
         }
     }
-*/
 }

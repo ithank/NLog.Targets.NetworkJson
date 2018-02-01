@@ -6,12 +6,14 @@ using GDNetworkJSONService.ExtensionMethods;
 using GDNetworkJSONService.Helpers;
 using GDNetworkJSONService.Hubs;
 using GDNetworkJSONService.LocalLogStorageDB;
+//using GDNetworkJSONService.LocalLogStorageDB;
 using GDNetworkJSONService.Loggers;
 using GDNetworkJSONService.Models;
 using GDNetworkJSONService.ServiceThreads;
 using Microsoft.Owin;
 using Microsoft.Owin.Hosting;
 using NLog.Targets.NetworkJSON.ExtensionMethods;
+using NLog.Targets.NetworkJSON.LogStorageDB;
 
 [assembly: OwinStartup(typeof(OwinStartup))]
 
@@ -19,7 +21,7 @@ namespace GDNetworkJSONService
 {
     partial class GDService : ServiceBase
     {
-        private IDisposable _signalR;
+        //private IDisposable _signalR;
         private GuaranteedDeliveryThreadDelegate _guaranteedDeliveryThreadDelegate;
         private GuaranteedDeliveryThreadDelegate _guaranteedDeliveryBackupThreadDelegate;
         private bool _isRunning = true;
@@ -55,6 +57,7 @@ namespace GDNetworkJSONService
                 var configLogger = LoggerFactory.GetConfigLogger(false);
                 configLogger.LogConfigSettings();
 
+                LogStorageDbGlobals.ConnectionString = LocalLogStorageDBGlobals.ConnectionString;
                 using (var dbConnection = LogStorageDbGlobals.OpenNewConnection())
                 {
                     if (!LogStorageTable.TableExists(dbConnection))
@@ -78,10 +81,10 @@ namespace GDNetworkJSONService
 
             try
             {
-                var options = new StartOptions();
+/*                var options = new StartOptions();
                 options.Urls.Add(_commandLineModel.Endpoint);
             
-                _signalR = WebApp.Start(options);
+                _signalR = WebApp.Start(options);*/
                 instrumentationlogger.PushInfoWithTime("SignalR Web App Started.");
             }
             catch (Exception ex)
@@ -179,7 +182,7 @@ namespace GDNetworkJSONService
         {
             if (!_isRunning) return;
             var diagnosticsLogger = LoggerFactory.GetDiagnosticsInstrumentationLogger();
-            diagnosticsLogger.LogItemsReceived = Interlocked.Exchange(ref LoggingHub.TotalMessageCount, 0);
+            //diagnosticsLogger.LogItemsReceived = Interlocked.Exchange(ref LoggingHub.TotalMessageCount, 0);
             diagnosticsLogger.LogItemsSentFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalSuccessCount, 0);
             diagnosticsLogger.LogItemsFailedFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalFailedCount, 0);
             diagnosticsLogger.LogItemsSentOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalSuccessCount, 0);
@@ -220,7 +223,7 @@ namespace GDNetworkJSONService
             logger.InitializeExecutionLogging($"{this.GetRealServiceName(ServiceName)} Shutdown");
 
             _isRunning = false;
-            _signalR?.Dispose();
+            //_signalR?.Dispose();
             _guaranteedDeliveryThreadDelegate.RegisterThreadShutdown();
             _guaranteedDeliveryBackupThreadDelegate.RegisterThreadShutdown();
 

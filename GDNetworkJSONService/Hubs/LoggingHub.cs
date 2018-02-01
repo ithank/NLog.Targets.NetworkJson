@@ -5,7 +5,7 @@ using Microsoft.AspNet.SignalR.Hubs;
 
 namespace GDNetworkJSONService.Hubs
 {
-    [HubName("GDServiceLogger")]
+/*    [HubName("GDServiceLogger")]
     public class LoggingHub : Hub
     {
         public static string DbConnectionString;
@@ -15,6 +15,7 @@ namespace GDNetworkJSONService.Hubs
         {
             Interlocked.Increment(ref TotalMessageCount);
             LocalLogStorageDB.LogStorageTable.InsertLogRecord(forwardEndpoint, jsonMessage);
+            Console.WriteLine(jsonMessage);
         }
-    }
+    }*/
 }

@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Configuration;
 using GDNetworkJSONService.Helpers;
-using GDNetworkJSONService.LocalLogStorageDB;
 using NLog.Targets.NetworkJSON.ExtensionMethods;
+using NLog.Targets.NetworkJSON.LogStorageDB;
+using LocalLogStorageDBGlobals = GDNetworkJSONService.LocalLogStorageDB.LocalLogStorageDBGlobals;
+
 
 namespace GDNetworkJSONService.Models
 {
@@ -188,24 +190,24 @@ namespace GDNetworkJSONService.Models
         {
             get
             {
-                return LogStorageDbGlobals.ConnectionString;
+                return LocalLogStorageDBGlobals.ConnectionString;
             }
             set
             {
                 if (value.IsNullOrEmpty())
                 {
-                    LogStorageDbGlobals.ConnectionString = "";
+                    LocalLogStorageDBGlobals.ConnectionString = "";
                     return;
                 }
                 if(value.Length > 3 && (value.StartsWith("\"") || value.StartsWith("'")))
                 {
-                    LogStorageDbGlobals.ConnectionString = value.Substring(0, value.Length - 2);
+                    LocalLogStorageDBGlobals.ConnectionString = value.Substring(0, value.Length - 2);
                 }
                 else
                 {
-                    LogStorageDbGlobals.ConnectionString = value;
+                    LocalLogStorageDBGlobals.ConnectionString = value;
                 }
-                ParameterInfo.Add($"Log Log Storage Connection String = {LogStorageDbGlobals.ConnectionString}");
+                ParameterInfo.Add($"Log Log Storage Connection String = {LocalLogStorageDBGlobals.ConnectionString}");
             }
         }
 
@@ -213,7 +215,7 @@ namespace GDNetworkJSONService.Models
         {
             get
             {
-                return LogStorageDbGlobals.DbSelectCount;
+                return LocalLogStorageDBGlobals.DbSelectCount;
             }
             set
             {
@@ -221,8 +223,8 @@ namespace GDNetworkJSONService.Models
                 {
                     return;
                 }
-                LogStorageDbGlobals.DbSelectCount = value;
-                ParameterInfo.Add($"DB Read Count = {LogStorageDbGlobals.DbSelectCount}");
+                LocalLogStorageDBGlobals.DbSelectCount = value;
+                ParameterInfo.Add($"DB Read Count = {LocalLogStorageDBGlobals.DbSelectCount}");
             }
         }
 
@@ -230,7 +232,7 @@ namespace GDNetworkJSONService.Models
         {
             get
             {
-                return LogStorageDbGlobals.MinutesTillDeadLetter;
+                return LocalLogStorageDBGlobals.MinutesTillDeadLetter;
             }
             set
             {
@@ -238,8 +240,8 @@ namespace GDNetworkJSONService.Models
                 {
                     return;
                 }
-                LogStorageDbGlobals.MinutesTillDeadLetter = value;
-                ParameterInfo.Add($"Minutes Till Dead Letter = {LogStorageDbGlobals.MinutesTillDeadLetter}");
+                LocalLogStorageDBGlobals.MinutesTillDeadLetter = value;
+                ParameterInfo.Add($"Minutes Till Dead Letter = {LocalLogStorageDBGlobals.MinutesTillDeadLetter}");
             }
         }
 
