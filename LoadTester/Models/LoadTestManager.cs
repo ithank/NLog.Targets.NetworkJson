@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -15,8 +16,8 @@ namespace NLog.Targets.NetworkJSON.LoadTester.Models
             Debug.Print("Entered RunThreadLoadTestsAsync.");
 
             var loadTestResults = new LoadTestThreadResults(threadData.ThreadID) { };
-
-            var target = new GDServiceTarget {GuaranteedDeliveryEndpoint = endpoint, NetworkJsonEndpoint = logStashEndpoint};
+            var conn = ConfigurationManager.ConnectionStrings["LocalLogStorage"]?.ConnectionString;
+            var target = new GDServiceTarget {GuaranteedDeliveryEndpoint = endpoint, NetworkJsonEndpoint = logStashEndpoint, LocalLogStorageConnectionString = conn};
             Debug.Print("New GDServiceTarget Created.");
 
             // Logging Operations

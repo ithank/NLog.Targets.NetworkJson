@@ -119,18 +119,12 @@
   <ItemGroup>
     <Compile Include="ExtensionMethods\ServiceExtensions.cs" />
     <Compile Include="Helpers\AppSettingsHelper.cs" />
-    <Compile Include="LocalLogStorageDB\DeadLetterLogStorageTable.cs" />
     <Compile Include="Loggers\DiagnosticsInstrumentationLogger.cs" />
     <Compile Include="ServiceThreads\GuaranteedDeliveryBackupThread.cs" />
     <Compile Include="ServiceThreads\GuaranteedDeliveryThread.cs" />
-    <Compile Include="LocalLogStorageDB\ColumnInfo.cs" />
-    <Compile Include="LocalLogStorageDB\LocalLogStorageDBGlobals.cs" />
-    <Compile Include="LocalLogStorageDB\LogStorageRecord.cs" />
-    <Compile Include="LocalLogStorageDB\LogStorageTable.cs" />
     <Compile Include="Loggers\InstrumenationLogger.cs" />
     <Compile Include="Loggers\LoggerFactory.cs" />
     <Compile Include="Loggers\MessageLogger.cs" />
-    <Compile Include="Hubs\LoggingHub.cs" />
     <Compile Include="Models\CommandLineModel.cs" />
     <Compile Include="OwinStartup.cs" />
     <Compile Include="Program.cs" />

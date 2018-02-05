@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Threading;
-using GDNetworkJSONService.LocalLogStorageDB;
 using NLog.Targets.NetworkJSON;
 using NLog.Targets.NetworkJSON.LogStorageDB;
 
@@ -57,7 +56,7 @@ namespace GDNetworkJSONService.ServiceThreads
                             catch (Exception ex)
                             {
                                 var recordAge = DateTime.Now - createdOn;
-                                if (recordAge.Minutes > LocalLogStorageDBGlobals.MinutesTillDeadLetter)
+                                if (recordAge.Minutes > LogStorageDbGlobals.MinutesTillDeadLetter)
                                 {
                                     DeadLetterLogStorageTable.InsertLogRecord(dbConnection, endpoint, logMessage, createdOn, retryCount);
                                     LogStorageTable.DeleteProcessedRecord(dbConnection, messageId);

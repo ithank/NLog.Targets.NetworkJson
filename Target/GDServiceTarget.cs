@@ -2,16 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NLog.Config;
-using NLog.Layouts;
-using Microsoft.AspNet.SignalR.Client;
-using NLog.Common;
 using NLog.Targets.NetworkJSON.LogStorageDB;
 
 namespace NLog.Targets.NetworkJSON
@@ -21,8 +14,6 @@ namespace NLog.Targets.NetworkJSON
     {
         #region NetworkJson Reliability Service Variables
 
-        //private HubConnection _localHubConnection;
-        //private IHubProxy _localHubProxy;
         private Uri _guaranteedDeliveryEndpoint;
         private Uri _networkJsonEndpoint;
 
@@ -35,18 +26,7 @@ namespace NLog.Targets.NetworkJSON
         {
             get { return _guaranteedDeliveryEndpoint.ToString(); }
             set
-            {
-                if (value != null)
-                {
-                    _guaranteedDeliveryEndpoint = new Uri(Environment.ExpandEnvironmentVariables(value));
-                    //ClearHubConnection();
-                }
-                else
-                {
-                    _guaranteedDeliveryEndpoint = null;
-                    //ClearHubConnection();
-                }
-            }
+            { _guaranteedDeliveryEndpoint = value != null ? new Uri(Environment.ExpandEnvironmentVariables(value)) : null; }
         }
 
         [Required]
@@ -54,54 +34,10 @@ namespace NLog.Targets.NetworkJSON
         {
             get { return _networkJsonEndpoint.ToString(); }
             set
-            {
-                if (value != null)
-                {
-                    _networkJsonEndpoint = new Uri(Environment.ExpandEnvironmentVariables(value));
-                }
-                else
-                {
-                    _networkJsonEndpoint = null;
-                }
-            }
+            { _networkJsonEndpoint = value != null ? new Uri(Environment.ExpandEnvironmentVariables(value)) : null; }
         }
-
-/*        private void ClearHubConnection()
-        {
-            if (_localHubConnection != null)
-            {
-                _localHubConnection.Stop();
-                _localHubConnection.Dispose();
-                _localHubConnection = null;
-                _localHubProxy = null;
-            }
-        }*/
-
-/*        private void InitHubConnection()
-        {
-            _localHubConnection = new HubConnection(GuaranteedDeliveryEndpoint);
-            _localHubProxy = _localHubConnection.CreateHubProxy("GDServiceLogger");
-            try
-            {
-                var task = _localHubConnection.Start();
-                task.GetAwaiter().GetResult();
-            }
-            catch (System.Exception)
-            {
-                try
-                {
-                    _localHubConnection.Stop();
-                    _localHubConnection.Dispose();
-                }
-                catch (Exception)
-                {
-                    
-                }
-                _localHubConnection = null;
-                _localHubProxy = null;
-            }
-            
-        }*/
+//        [Required]
+        public string LocalLogStorageConnectionString { get; set; }
 
         [ArrayParameter(typeof(ParameterInfo), "parameter")]
         public IList<ParameterInfo> Parameters { get; }
@@ -150,29 +86,13 @@ namespace NLog.Targets.NetworkJSON
         /// </summary>
         public Task WriteAsync(string logEventAsJsonString)
         {
-                        ////if (_localHubConnection == null)
-                        ////{
-                        ////    InitHubConnection();
-                        ////}
-                        ////if (_localHubConnection != null && _localHubConnection.State == ConnectionState.Connected)
-                        ////{
-                        ////    return _localHubProxy.Invoke("storeAndForward", NetworkJsonEndpoint, logEventAsJsonString);
-                        ////}
-                        ////return Task.FromException(new Exception($"Connection to {_guaranteedDeliveryEndpoint} not online"));
-
             return Task.Run(() =>
                 {
-
-                    Interlocked.Increment(ref TotalMessageCount);
+                    LogStorageDbGlobals.ConnectionString = LocalLogStorageConnectionString;
                     LogStorageTable.InsertLogRecord(NetworkJsonEndpoint, logEventAsJsonString);
                     Trace.WriteLine(logEventAsJsonString);
                 }
             );
-        //return Task.FromException(new Exception($"Connection to {_guaranteedDeliveryEndpoint} not online"));
         }
-
-        public static string DbConnectionString;
-
-        public static int TotalMessageCount;
     }
 }
