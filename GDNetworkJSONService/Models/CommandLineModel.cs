@@ -2,7 +2,6 @@
 using System.Configuration;
 using GDNetworkJSONService.Helpers;
 using NLog.Targets.NetworkJSON.ExtensionMethods;
-using NLog.Targets.NetworkJSON.LogStorageDB;
 
 
 namespace GDNetworkJSONService.Models
@@ -37,7 +36,7 @@ namespace GDNetworkJSONService.Models
                         $"                            in a single SELECT statement.",
                         @"  /MTDL                     The number of minutes on SUBSEQUENT retries of attempting to",
                         @"                            send a log message before it is considered a 'Dead Letter'",
-                        $"                            and is moved to the {DeadLetterLogStorageTable.TableName} table.",
+                        $"                            and is moved to the DeadLetter List.",
                         @"  /?                        Display this help information.",
                         @" "
                     };
@@ -85,12 +84,12 @@ namespace GDNetworkJSONService.Models
                     ErrorInfo.Add("Endpoint is not properly setup in the application configuration and was not passed at the command line.");
                 }
             }
-            if (LocalLogStorage.IsNullOrEmpty())
+            if (NetworkJsonEndpoint.IsNullOrEmpty())
             {
-                LocalLogStorage = ConfigurationManager.ConnectionStrings["LocalLogStorage"]?.ConnectionString;
-                if (LocalLogStorage.IsNullOrEmpty())
+                NetworkJsonEndpoint = ConfigurationManager.AppSettings["NetworkJsonEndpoint"];
+                if (NetworkJsonEndpoint.IsNullOrEmpty())
                 {
-                    ErrorInfo.Add("LocalLogStorage is not properly setup in the application configuration and was not passed at the command line.");
+                    ErrorInfo.Add("NetworkJsonEndpoint is not properly setup in the application configuration and was not passed at the command line.");
                 }
             }
             if (DbSelectCount < 1)
@@ -102,6 +101,39 @@ namespace GDNetworkJSONService.Models
                 MinutesToDeadLetter = AppSettingsHelper.MinutesToDeadLetter;
             }
             
+            //Redis
+            if (RedisHost.IsNullOrEmpty())
+            {
+                RedisHost = AppSettingsHelper.RedisHost;
+            }
+            if (RedisPort < 1)
+            {
+                RedisPort = AppSettingsHelper.RedisPort;
+            }
+            if (RedisDB < 1)
+            {
+                RedisDB = AppSettingsHelper.RedisDb;
+            }
+            if (RedisKey.IsNullOrEmpty())
+            {
+                RedisKey = AppSettingsHelper.RedisKey;
+            }
+            if (RedisBackupKey.IsNullOrEmpty())
+            {
+                RedisBackupKey = AppSettingsHelper.RedisBackupKey;
+            }
+            if (RedisDataType.IsNullOrEmpty())
+            {
+                RedisDataType = AppSettingsHelper.RedisDataType;
+            }
+            if (RedisPassword.IsNullOrEmpty())
+            {
+                RedisPassword = AppSettingsHelper.RedisPassword;
+            }
+
+
+
+
             if (ErrorInfo.Count > 0)
             {
                 parameterStatus = ParseCommandLineStatus.DisplayError;
@@ -185,37 +217,27 @@ namespace GDNetworkJSONService.Models
             }
         }
 
-        private string _localLogStorage;
-        public string LocalLogStorage
+        private string _networkJsonEndpoint;
+        public string NetworkJsonEndpoint
         {
             get
             {
-                return _localLogStorage;
+                return _networkJsonEndpoint;
             }
             set
             {
-                if (value.IsNullOrEmpty())
-                {
-                    _localLogStorage = "";
-                    return;
-                }
-                if(value.Length > 3 && (value.StartsWith("\"") || value.StartsWith("'")))
-                {
-                    _localLogStorage = value.Substring(0, value.Length - 2);
-                }
-                else
-                {
-                    _localLogStorage = value;
-                }
-                ParameterInfo.Add($"Local Log Storage Connection String = {_localLogStorage}");
+                _networkJsonEndpoint = value;
+                ParameterInfo.Add($"NetworkJsonEndpoint = {_networkJsonEndpoint}");
             }
         }
 
+
+        private int _dbSelectCount;
         public int DbSelectCount
         {
             get
             {
-                return LogStorageDbGlobals.DbSelectCount;
+                return _dbSelectCount;
             }
             set
             {
@@ -223,16 +245,17 @@ namespace GDNetworkJSONService.Models
                 {
                     return;
                 }
-                LogStorageDbGlobals.DbSelectCount = value;
-                ParameterInfo.Add($"DB Read Count = {LogStorageDbGlobals.DbSelectCount}");
+                _dbSelectCount = value;
+                ParameterInfo.Add($"DB Read Count = {_dbSelectCount}");
             }
         }
 
+        private int _minutesToDeadLetter;
         public int MinutesToDeadLetter
         {
             get
             {
-                return LogStorageDbGlobals.MinutesTillDeadLetter;
+                return _minutesToDeadLetter;
             }
             set
             {
@@ -240,8 +263,113 @@ namespace GDNetworkJSONService.Models
                 {
                     return;
                 }
-                LogStorageDbGlobals.MinutesTillDeadLetter = value;
-                ParameterInfo.Add($"Minutes Till Dead Letter = {LogStorageDbGlobals.MinutesTillDeadLetter}");
+                _minutesToDeadLetter = value;
+                ParameterInfo.Add($"Minutes Till Dead Letter = {_minutesToDeadLetter}");
+            }
+        }
+
+        private string _redisHost;
+        public string RedisHost
+        {
+            get
+            {
+                return _redisHost;
+            }
+            set
+            {
+                _redisHost = value;
+                ParameterInfo.Add($"Redis Host = {_redisHost}");
+            }
+        }
+        private int _redisPort;
+        public int RedisPort
+        {
+            get
+            {
+                return _redisPort;
+            }
+            set
+            {
+                if (value < 1)
+                {
+                    return;
+                }
+                _redisPort = value;
+                ParameterInfo.Add($"Redis Port = {_redisPort}");
+            }
+        }
+
+        private string _redisKey;
+        public string RedisKey
+        {
+            get
+            {
+                return _redisKey;
+            }
+            set
+            {
+                _redisKey = value;
+                ParameterInfo.Add($"Redis Key = {_redisKey}");
+            }
+        }
+
+        private string _redisBackupKey;
+        public string RedisBackupKey
+        {
+            get
+            {
+                return _redisBackupKey;
+            }
+            set
+            {
+                _redisBackupKey = value;
+                ParameterInfo.Add($"Redis Key = {_redisBackupKey}");
+            }
+        }
+
+        private string _redisDataType;
+        public string RedisDataType
+        {
+            get
+            {
+                return _redisDataType;
+            }
+            set
+            {
+                _redisDataType = value;
+                ParameterInfo.Add($"Redis Data Type = {_redisDataType}");
+            }
+        }
+        private int _redisDb;
+        public int RedisDB
+        {
+            get
+            {
+                return _redisDb;
+            }
+            set
+            {
+                if (value < 0)
+                {
+                    return;
+                }
+                _redisDb = value;
+                ParameterInfo.Add($"Redis DB = {_redisDb}");
+            }
+        }
+
+        private string _redisPassword;
+        public string RedisPassword
+        {
+            get
+            {
+                return _redisPassword;
+            }
+            set
+            {
+                _redisPassword = value;
+                var tmp = _redisPassword == "" ? "<none>" : "************";
+                ParameterInfo.Add($"Redis Password = {tmp}");
             }
         }
 

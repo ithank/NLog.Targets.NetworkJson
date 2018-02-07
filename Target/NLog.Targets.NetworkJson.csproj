@@ -58,6 +58,10 @@
       <HintPath>..\packages\NLog.4.4.9\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="StackExchange.Redis, Version=1.2.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\StackExchange.Redis.1.2.6\lib\net46\StackExchange.Redis.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
@@ -73,6 +77,7 @@
       <HintPath>..\packages\System.Data.SQLite.Linq.1.0.106.0\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -84,10 +89,6 @@
     <Compile Include="JsonConverter.cs" />
     <Compile Include="BaseJsonMessage.cs" />
     <Compile Include="GDServiceTarget.cs" />
-    <Compile Include="LogStorageDB\ColumnInfo.cs" />
-    <Compile Include="LogStorageDB\DeadLetterLogStorageTable.cs" />
-    <Compile Include="LogStorageDB\LogStorage.cs" />
-    <Compile Include="LogStorageDB\LogStorageDbGlobals.cs" />
     <Compile Include="ParameterInfo.cs" />
     <Compile Include="IConverter.cs" />
     <Compile Include="IDnsResolver.cs" />
@@ -95,6 +96,8 @@
     <Compile Include="ITransportClient.cs" />
     <Compile Include="NetworkJsonTarget.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RedisConnectionManager.cs" />
+    <Compile Include="RedisTarget.cs" />
     <Compile Include="TcpTransport.cs" />
     <Compile Include="UdpTransport.cs" />
     <Compile Include="TcpTransportClient.cs" />

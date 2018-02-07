@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Threading;
 using NLog.Targets.NetworkJSON;
-using NLog.Targets.NetworkJSON.LogStorageDB;
 
 
 namespace GDNetworkJSONService.ServiceThreads
@@ -12,76 +10,83 @@ namespace GDNetworkJSONService.ServiceThreads
     {
         public static int TotalSuccessCount;
         public static int TotalFailedCount;
+        private static GuaranteedDeliveryThreadDelegate _threadData;
+
 
         public static void ThreadMethod(GuaranteedDeliveryThreadDelegate threadData)
         {
-            SQLiteConnection dbConnection = null;
+            _threadData = threadData;
+            RedisConnectionManager redisConnectionManager;
+            redisConnectionManager = new RedisConnectionManager(threadData.Host, threadData.Port, threadData.Db, threadData.Password);
+
             var targets = new Dictionary<string, NetworkJsonTarget>();
+            var endpoint = threadData.EndPoint;
             while (!threadData.IsAppShuttingDown)
             {
                 try
                 {
-                    if (dbConnection == null)
-                    {
-                        dbConnection = LogStorageDbGlobals.OpenNewConnection();
-                    }
+                    var redisDb = redisConnectionManager.GetDatabase();
 
-                    var logMessages = LogStorageTable.GetRetryRecords(dbConnection);
-                    if (logMessages.Rows.Count == 0)
+                    //var logMessage = redisDb.ListLeftPop(threadData.BackupKey);
+                    var logMessage = redisDb.ListGetByIndex(threadData.BackupKey, 0); // get the oldest/top of list
+                    if (logMessage.IsNullOrEmpty)
                     {
-                        Thread.Sleep(60000);
+                        Thread.Sleep(500);
                     }
                     else
                     {
-                        for (var inc = 0; inc < logMessages.Rows.Count; inc++)
+                        try
                         {
-                            var messageId = (long)logMessages.Rows[inc][LogStorageTable.Columns.MessageId.Index];
-                            var endpoint = logMessages.Rows[inc][LogStorageTable.Columns.Endpoint.Index].ToString();
-                            var logMessage = logMessages.Rows[inc][LogStorageTable.Columns.LogMessage.Index].ToString();
-                            var retryCount = (long)logMessages.Rows[inc][LogStorageTable.Columns.RetryCount.Index];
-                            var createdOn = (DateTime) logMessages.Rows[inc][LogStorageTable.Columns.CreatedOn.Index];
                             NetworkJsonTarget currentTarget = null;
                             if (!targets.TryGetValue(endpoint, out currentTarget))
                             {
-                                currentTarget = new NetworkJsonTarget {Endpoint = endpoint};
+                                currentTarget = new NetworkJsonTarget { Endpoint = endpoint };
                                 targets.Add(endpoint, currentTarget);
                             }
-                            try
-                            {
-                                retryCount++;
-                                currentTarget.Write(logMessage);
-                                LogStorageTable.DeleteProcessedRecord(dbConnection, messageId);
-                                Interlocked.Increment(ref TotalSuccessCount);
-                            }
-                            catch (Exception ex)
-                            {
-                                var recordAge = DateTime.Now - createdOn;
-                                if (recordAge.Minutes > LogStorageDbGlobals.MinutesTillDeadLetter)
-                                {
-                                    DeadLetterLogStorageTable.InsertLogRecord(dbConnection, endpoint, logMessage, createdOn, retryCount);
-                                    LogStorageTable.DeleteProcessedRecord(dbConnection, messageId);
-                                }
-                                else
-                                {
-                                    LogStorageTable.UpdateLogRecord(dbConnection, messageId, retryCount);
-                                }
-                                targets.Remove(endpoint);
-                                Interlocked.Increment(ref TotalFailedCount);
-                                Thread.Sleep(2000);
-                            }
+
+                            currentTarget.Write(logMessage);
+                            Interlocked.Increment(ref TotalSuccessCount);
+
+                            //now delete it
+                            redisDb.ListRemove(threadData.BackupKey, logMessage);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Fail the message, backup thread will take over for this message until dead letter time.
+                            /////PushLogMessageToBackupList(logMessage);
+                            targets.Remove(endpoint);
+                            Interlocked.Increment(ref TotalFailedCount);
+                            Thread.Sleep(500);
                         }
                     }
+
                 }
                 catch (Exception ex)
                 {
-                    dbConnection?.Close();
-                    dbConnection = null;
+                    redisConnectionManager?.Dispose();
                     targets.Clear();
-                    Thread.Sleep(60000);
+                    Thread.Sleep(1000);
                 }
-                
             }
             threadData.ThreadHasShutdown();
         }
+
+/*        private static void PushLogMessageToBackupList(RedisValue message)
+        {
+            try
+            {
+                using (RedisConnectionManager redisConnectionManager =
+                    new RedisConnectionManager(_threadData.Host, _threadData.Port, _threadData.Db,
+                        _threadData.Password))
+                {
+                    var redisDB = redisConnectionManager.GetDatabase();
+                    redisDB.ListRightPushAsync(_threadData.BackupKey, message);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }*/
     }
 }

@@ -13,11 +13,14 @@ namespace NLog.Targets.NetworkJSON.LoadTester.Models
     {
         public static async Task<LoadTestThreadResults> RunThreadLoadTestsSimulateLoggingAsync(string endpoint, string logStashEndpoint, LoadTestThreadData threadData, CancellationToken ct)
         {
-            Debug.Print("Entered RunThreadLoadTestsAsync.");
+            var loadTestResults = new LoadTestThreadResults(threadData.ThreadID) { };
+            return loadTestResults;
+/*            Debug.Print("Entered RunThreadLoadTestsAsync.");
 
             var loadTestResults = new LoadTestThreadResults(threadData.ThreadID) { };
             var conn = ConfigurationManager.ConnectionStrings["LocalLogStorage"]?.ConnectionString;
-            var target = new GDServiceTarget {GuaranteedDeliveryEndpoint = endpoint, NetworkJsonEndpoint = logStashEndpoint, LocalLogStorageConnectionString = conn};
+            //var target = new GDServiceTarget {GuaranteedDeliveryEndpoint = endpoint, NetworkJsonEndpoint = logStashEndpoint, LocalLogStorageConnectionString = conn};
+            var target = new RedisTarget() {GuaranteedDeliveryEndpoint = endpoint, NetworkJsonEndpoint = logStashEndpoint, LocalLogStorageConnectionString = conn};
             Debug.Print("New GDServiceTarget Created.");
 
             // Logging Operations
@@ -56,7 +59,7 @@ namespace NLog.Targets.NetworkJSON.LoadTester.Models
                 ct.ThrowIfCancellationRequested();
             }
 
-            return loadTestResults;
+            return loadTestResults;*/
         }
 
         public static async Task<LoadTestThreadResults> RunThreadLoadTestsActuallyLoggingAsync(string endpoint, string logStashEndpoint, LoadTestThreadData threadData, CancellationToken ct)

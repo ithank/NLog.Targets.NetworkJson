@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.ServiceProcess;
 using System.Threading;
 using GDNetworkJSONService;
@@ -8,8 +9,9 @@ using GDNetworkJSONService.Loggers;
 using GDNetworkJSONService.Models;
 using GDNetworkJSONService.ServiceThreads;
 using Microsoft.Owin;
+using NLog.Targets.NetworkJSON;
 using NLog.Targets.NetworkJSON.ExtensionMethods;
-using NLog.Targets.NetworkJSON.LogStorageDB;
+using StackExchange.Redis;
 
 [assembly: OwinStartup(typeof(OwinStartup))]
 
@@ -49,55 +51,62 @@ namespace GDNetworkJSONService
 
             try
             {
-                var configLogger = LoggerFactory.GetConfigLogger(false);
-                configLogger.LogConfigSettings();
-
-                LogStorageDbGlobals.ConnectionString = _commandLineModel.LocalLogStorage;
-                using (var dbConnection = LogStorageDbGlobals.OpenNewConnection())
+/*                RedisConnectionManager redisConnectionManager;
+                redisConnectionManager = new RedisConnectionManager(_commandLineModel.RedisHost, _commandLineModel.RedisPort, _commandLineModel.RedisDB, _commandLineModel.RedisPassword);
+                try
                 {
-                    if (!LogStorageTable.TableExists(dbConnection))
-                    {
-                        instrumentationlogger.PushInfo($"{LogStorageTable.TableName} does not exist, creating.");
-                        LogStorageTable.CreateTable(dbConnection);
-                        instrumentationlogger.PushInfoWithTime($"{LogStorageTable.TableName} created.");
-                    }
-                    if (!DeadLetterLogStorageTable.TableExists(dbConnection))
-                    {
-                        instrumentationlogger.PushInfo($"{DeadLetterLogStorageTable.TableName} does not exist, creating.");
-                        DeadLetterLogStorageTable.CreateTable(dbConnection);
-                        instrumentationlogger.PushInfoWithTime($"{DeadLetterLogStorageTable.TableName} created.");
-                    }
+                    var redisDb = redisConnectionManager.GetDatabase();
                 }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    Process p = new Process();
+                    p.StartInfo.UseShellExecute = false;
+                    p.StartInfo.FileName = "redis-server";
+                    p.StartInfo.Arguments = "redis.windows.conf";
+                    p.Start();
+                }
+                finally
+                {
+                    redisConnectionManager.Dispose();
+                }*/
             }
             catch (Exception ex)
             {
-                throw new Exception("SQLite Database Opening / Creation Failed.", ex);
+                throw new Exception("Failed to connect to Redis.", ex);
             }
 
             try
             {
-                instrumentationlogger.PushInfoWithTime("SignalR Web App Started.");
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("SignalR Hub Initialization Failed.", ex);
-            }
-
-            try
-            {
-                _guaranteedDeliveryThreadDelegate = new GuaranteedDeliveryThreadDelegate();
+                _guaranteedDeliveryThreadDelegate = new GuaranteedDeliveryThreadDelegate
+                {
+                    BackupKey = _commandLineModel.RedisBackupKey,
+                    Db = _commandLineModel.RedisDB,
+                    EndPoint = _commandLineModel.NetworkJsonEndpoint,
+                    Host = _commandLineModel.RedisHost,
+                    Key = _commandLineModel.RedisKey,
+                    Password = _commandLineModel.RedisPassword
+                };
 
                 var thread = new Thread(() => GuaranteedDeliveryThread.ThreadMethod(_guaranteedDeliveryThreadDelegate));
                 thread.Start();
                 instrumentationlogger.PushInfoWithTime("Guaranteed Delivery Thread Started.");
 
-                _guaranteedDeliveryBackupThreadDelegate = new GuaranteedDeliveryThreadDelegate();
+                _guaranteedDeliveryThreadDelegate = new GuaranteedDeliveryThreadDelegate
+                {
+                    BackupKey = _commandLineModel.RedisBackupKey,
+                    Db = _commandLineModel.RedisDB,
+                    EndPoint = _commandLineModel.NetworkJsonEndpoint,
+                    Host = _commandLineModel.RedisHost,
+                    Key = _commandLineModel.RedisKey,
+                    Password = _commandLineModel.RedisPassword
+                };
 
-                thread = new Thread(() => GuaranteedDeliveryBackupThread.ThreadMethod(_guaranteedDeliveryBackupThreadDelegate));
+                thread = new Thread(() => GuaranteedDeliveryBackupThread.ThreadMethod(_guaranteedDeliveryThreadDelegate));
                 thread.Start();
-                instrumentationlogger.PushInfoWithTime("Guaranteed Delivery Backup Thread Started.");
+                instrumentationlogger.PushInfoWithTime("Guaranteed Delivery Thread Started.");
 
-                SetupDiagnosticsSchedule();
+                //SetupDiagnosticsSchedule();
             }
             catch (Exception ex)
             {
@@ -175,9 +184,10 @@ namespace GDNetworkJSONService
             var diagnosticsLogger = LoggerFactory.GetDiagnosticsInstrumentationLogger();
             diagnosticsLogger.LogItemsSentFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalSuccessCount, 0);
             diagnosticsLogger.LogItemsFailedFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalFailedCount, 0);
-            diagnosticsLogger.LogItemsSentOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalSuccessCount, 0);
-            diagnosticsLogger.LogItemsFailedOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalFailedCount, 0);
+            //diagnosticsLogger.LogItemsSentOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalSuccessCount, 0);
+            //diagnosticsLogger.LogItemsFailedOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalFailedCount, 0);
             diagnosticsLogger.DiagnosticsIntervalMS = _diagnosticsInterval;
+/*
             try
             {
                 using (var dbConnection = LogStorageDbGlobals.OpenNewConnection())
@@ -189,6 +199,7 @@ namespace GDNetworkJSONService
             catch (Exception ex)
             {
             }
+*/
 
             if (AppSettingsHelper.SkipZeroDiagnostics)
             {

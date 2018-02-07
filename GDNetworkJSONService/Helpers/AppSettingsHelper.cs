@@ -68,5 +68,74 @@ namespace GDNetworkJSONService.Helpers
                 return int.TryParse(tempMtdlStr, out tempMtdlInt) ? tempMtdlInt : 5760;
             }
         }
+
+        #region Redis Settings
+        public static string RedisHost
+        {
+            get
+            {
+                var redisHost = ConfigurationManager.AppSettings["RedisHost"];
+                return !redisHost.IsNullOrEmpty() ? redisHost : "127.0.0.1";
+            }
+        }
+
+        public static int RedisPort
+        {
+            get
+            {
+                var portStr = ConfigurationManager.AppSettings["RedisPort"];
+                var portInt = 0;
+                return int.TryParse(portStr, out portInt) ? portInt : 6379;
+            }
+        }
+
+        public static string RedisKey
+        {
+            get
+            {
+                var redisKey = ConfigurationManager.AppSettings["RedisKey"];
+                return !redisKey.IsNullOrEmpty() ? redisKey : "logKey";
+            }
+        }
+
+        public static string RedisBackupKey
+        {
+            get
+            {
+                var redisKey = ConfigurationManager.AppSettings["RedisBackupKey"];
+                return !redisKey.IsNullOrEmpty() ? redisKey : "logBackupKey";
+            }
+        }
+
+        public static string RedisDataType
+        {
+            get
+            {
+                var redisDataType = ConfigurationManager.AppSettings["RedisDataType"];
+                return !redisDataType.IsNullOrEmpty() ? redisDataType : "list";
+            }
+        }
+
+        public static int RedisDb
+        {
+            get
+            {
+                var dbStr = ConfigurationManager.AppSettings["RedisDb"];
+                var dbInt = 0;
+                return int.TryParse(dbStr, out dbInt) ? dbInt : 0;
+            }
+        }
+
+
+        public static string RedisPassword
+        {
+            get
+            {
+                var redisPassword = ConfigurationManager.AppSettings["RedisPassword"];
+                return !redisPassword.IsNullOrEmpty() ? redisPassword : "";
+            }
+        }
+        #endregion
+
     }
 }

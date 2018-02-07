@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NLog.Config;
-using NLog.Targets.NetworkJSON.LogStorageDB;
 
 namespace NLog.Targets.NetworkJSON
 {
+/*
     [Target("GDService")]
     public class GDServiceTarget : TargetWithLayout
     {
@@ -95,4 +95,5 @@ namespace NLog.Targets.NetworkJSON
             );
         }
     }
+*/
 }
