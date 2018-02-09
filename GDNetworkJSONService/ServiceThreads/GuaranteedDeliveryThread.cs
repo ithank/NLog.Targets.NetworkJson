@@ -37,7 +37,7 @@ namespace GDNetworkJSONService.ServiceThreads
 
     internal class GuaranteedDeliveryThread
     {
-        public static IDatabase RedisDb;
+        //public static IDatabase RedisDb;
         public static int TotalSuccessCount;
         public static int TotalFailedCount;
         private static GuaranteedDeliveryThreadDelegate _threadData;
@@ -46,9 +46,7 @@ namespace GDNetworkJSONService.ServiceThreads
         public static void ThreadMethod(GuaranteedDeliveryThreadDelegate threadData, IDatabase redisDb)
         {
             _threadData = threadData;
-            RedisDb = redisDb;
-            //RedisConnectionManager redisConnectionManager;
-            //redisConnectionManager = new RedisConnectionManager(threadData.Host, threadData.Port, threadData.Db, threadData.Password);
+            //RedisDb = redisDb;
 
             var targets = new Dictionary<string, NetworkJsonTarget>();
             var endpoint = threadData.EndPoint;
@@ -56,8 +54,6 @@ namespace GDNetworkJSONService.ServiceThreads
             {
                 try
                 {
-                    //var redisDb = redisConnectionManager.GetDatabase();
-
                     var logMessage = redisDb.ListLeftPop(threadData.Key);
                     if (logMessage.IsNullOrEmpty)
                     {
@@ -80,8 +76,7 @@ namespace GDNetworkJSONService.ServiceThreads
                         catch (Exception ex)
                         {
                             // Fail the message, backup thread will take over for this message until dead letter time.
-                            //PushLogMessageToBackupList(logMessage);
-                            RedisDb.ListRightPushAsync(_threadData.BackupKey, logMessage);
+                            redisDb.ListRightPushAsync(_threadData.BackupKey, logMessage);
                             targets.Remove(endpoint);
                             Interlocked.Increment(ref TotalFailedCount);
                             Thread.Sleep(500);
@@ -91,7 +86,6 @@ namespace GDNetworkJSONService.ServiceThreads
                 }
                 catch (Exception ex)
                 {
-                    //redisConnectionManager?.Dispose();
                     targets.Clear();
                     Thread.Sleep(1000);
                 }
@@ -99,24 +93,5 @@ namespace GDNetworkJSONService.ServiceThreads
             threadData.ThreadHasShutdown();
         }
 
-/*
-        private static void PushLogMessageToBackupList(RedisValue message)
-        {
-            try
-            {
-                using (RedisConnectionManager redisConnectionManager =
-                    new RedisConnectionManager(_threadData.Host, _threadData.Port, _threadData.Db,
-                        _threadData.Password))
-                {
-                    var redisDB = redisConnectionManager.GetDatabase();
-                    redisDB.ListRightPushAsync(_threadData.BackupKey, message);  //push to the end
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-        }
-*/
     }
 }

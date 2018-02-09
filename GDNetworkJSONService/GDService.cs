@@ -58,8 +58,8 @@ namespace GDNetworkJSONService
             }
 
             try
-            {               
-                
+            {
+                // Get shared connection to Redis
                 _redisConnectionManager = new RedisConnectionManager(_commandLineModel.RedisHost, _commandLineModel.RedisPort, _commandLineModel.RedisDB, _commandLineModel.RedisPassword);
                 try
                 {
@@ -78,16 +78,6 @@ namespace GDNetworkJSONService
                 OnStop();
                 throw new Exception("Failed to connect to Redis.", ex);
             }
-
-
-/*
-            var redisInfo = GetRedisInfoData();
-            if (!redisInfo.IsNullOrEmpty())
-            {
-                var redisLogger = RedisCliInfoParser.Parse(redisInfo);
-            }
-*/
-
 
             try
             {
@@ -128,17 +118,6 @@ namespace GDNetworkJSONService
 
             instrumentationlogger.LogExecutionComplete(0);
         }
-
-/*        private bool StartRedis()
-        {
-            Process p = new Process();
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.FileName = "redis-server.exe";
-            p.StartInfo.Arguments = "redis.windows.conf";
-            p.Start();
-            Thread.Sleep(3);
-            return VerifyRedisIsRunning();
-        }*/
 
         private bool VerifyRedisIsRunning()
         {
@@ -235,10 +214,10 @@ namespace GDNetworkJSONService
             var redisInfo = GetRedisInfoData();
             if (!redisInfo.IsNullOrEmpty())
             {
-                var parser = new RedisCliInfoParser();
                 var redisInfoDict = RedisCliInfoParser.Parse(redisInfo);
                 var redisLogger = LoggerFactory.GetRedisMonitorLogger();
                 redisLogger.Stats = redisInfoDict;
+                redisLogger.MonitorIntervalMS = _diagnosticsInterval;
                 redisLogger.LogStats();
             }
 

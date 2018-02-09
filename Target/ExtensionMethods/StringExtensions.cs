@@ -100,5 +100,11 @@ namespace NLog.Targets.NetworkJSON.ExtensionMethods
             return result;
 
         }
+
+        public static string SafeLowerCaseFirst(this string str)
+        {
+            if (str == null || str.Length < 2) { return str; }
+            return str.Substring(0, 1).ToLower() + str.Substring(1);
+        }
     }
 }
