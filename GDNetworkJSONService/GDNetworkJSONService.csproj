@@ -112,7 +112,9 @@
   <ItemGroup>
     <Compile Include="ExtensionMethods\ServiceExtensions.cs" />
     <Compile Include="Helpers\AppSettingsHelper.cs" />
+    <Compile Include="Helpers\RedisCliInfoParser.cs" />
     <Compile Include="Loggers\DiagnosticsInstrumentationLogger.cs" />
+    <Compile Include="Loggers\RedisMonitorLogger.cs" />
     <Compile Include="ServiceThreads\GuaranteedDeliveryBackupThread.cs" />
     <Compile Include="ServiceThreads\GuaranteedDeliveryThread.cs" />
     <Compile Include="Loggers\InstrumenationLogger.cs" />

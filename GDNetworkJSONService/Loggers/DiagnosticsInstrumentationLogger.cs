@@ -21,6 +21,7 @@ namespace GDNetworkJSONService.Loggers
         public int LogItemsFailedFirstTry { get; set; }
         public int LogItemsFailedOnRetry { get; set; }
 
+        public long QueueCount { get; set; }
         public long BacklogCount { get; set; }
 
         public long DeadLetterCount { get; set; }
@@ -38,6 +39,7 @@ namespace GDNetworkJSONService.Loggers
             PushInfo(nameof(LogItemsSentOnRetry), LogItemsSentOnRetry.ToString());
             PushInfo(nameof(LogItemsFailedFirstTry), LogItemsFailedFirstTry.ToString());
             PushInfo(nameof(LogItemsFailedOnRetry), LogItemsFailedOnRetry.ToString());
+            PushInfo(nameof(QueueCount), QueueCount.ToString());
             PushInfo(nameof(BacklogCount), BacklogCount.ToString());
             PushInfo(nameof(DeadLetterCount), DeadLetterCount.ToString());
             PushInfo(nameof(DiagnosticsIntervalMS), DiagnosticsIntervalMS.ToString());
@@ -69,6 +71,7 @@ namespace GDNetworkJSONService.Loggers
             logEvent.Properties["logItemsFailedOnRetry"] = LogItemsFailedOnRetry;
             logEvent.Properties["deadLetterCount"] = DeadLetterCount;
             logEvent.Properties["backlogCount"] = BacklogCount;
+            logEvent.Properties["queueCount"] = QueueCount;
             logEvent.Properties["diagnosticsIntervalMS"] = DiagnosticsIntervalMS;
         }
         

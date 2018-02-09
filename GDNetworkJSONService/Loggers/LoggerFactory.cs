@@ -11,6 +11,10 @@ namespace GDNetworkJSONService.Loggers
         {
             return new DiagnosticsInstrumentationLogger(Assembly.GetExecutingAssembly(), ApplicationLoggingId);
         }
+        public static RedisMonitorLogger GetRedisMonitorLogger()
+        {
+            return new RedisMonitorLogger(Assembly.GetExecutingAssembly(), ApplicationLoggingId);
+        }
 
         public static InstrumentationLogger GetInstrumentationLogger()
         {

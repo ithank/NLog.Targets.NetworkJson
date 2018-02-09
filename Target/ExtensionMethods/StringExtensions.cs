@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace NLog.Targets.NetworkJSON.ExtensionMethods
 {
@@ -60,6 +61,44 @@ namespace NLog.Targets.NetworkJSON.ExtensionMethods
         public static bool StartsWithCommandLineArg(this string arg, string argExpected)
         {
             return arg.SafeToUpper().StartsWith($"/{argExpected.SafeToUpper()}") || arg.SafeToUpper().StartsWith($"-{argExpected.SafeToUpper()}");
+        }
+
+        public static string SafeToCamelCase(this string str)
+        {
+            if (str == null || str.Length < 2) { return str; }
+
+            // Split the string into words.
+            string[] words = str.Replace("_", " ").Split(new char[] { }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Combine the words.
+            string result = words[0].ToLower();
+            for (int i = 1; i < words.Length; i++)
+            {
+                result +=
+                    words[i].Substring(0, 1).ToUpper() +
+                    words[i].Substring(1).ToLower();
+            }
+
+            return result;
+
+        }
+        public static string SafeToTitleCase(this string str)
+        {
+            if (str == null || str.Length < 2) { return str; }
+
+            // Split the string into words.
+            string[] words = str.Replace("_", " ").ToLower().Split(new char[] { });
+
+            // Combine the words.
+            string result = string.Join(" ", words);
+
+            // Creates a TextInfo based on the "en-US" culture.
+            TextInfo ti = new CultureInfo("en-US", false).TextInfo;
+
+            result = ti.ToTitleCase(result).Replace(" ", String.Empty);
+
+            return result;
+
         }
     }
 }

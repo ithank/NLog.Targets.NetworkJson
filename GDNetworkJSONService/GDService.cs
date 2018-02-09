@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.ServiceProcess;
 using System.Threading;
 using GDNetworkJSONService;
@@ -19,6 +20,8 @@ namespace GDNetworkJSONService
 {
     partial class GDService : ServiceBase
     {
+        private RedisConnectionManager _redisConnectionManager;
+        private IDatabase _redisDb;
         private GuaranteedDeliveryThreadDelegate _guaranteedDeliveryThreadDelegate;
         private GuaranteedDeliveryThreadDelegate _guaranteedDeliveryBackupThreadDelegate;
         private bool _isRunning = true;
@@ -49,32 +52,42 @@ namespace GDNetworkJSONService
             var instrumentationlogger = LoggerFactory.GetInstrumentationLogger();
             instrumentationlogger.InitializeExecutionLogging($"{this.GetRealServiceName(ServiceName)} Startup");
 
-            try
+            if (!VerifyRedisIsRunning())
             {
-/*                RedisConnectionManager redisConnectionManager;
-                redisConnectionManager = new RedisConnectionManager(_commandLineModel.RedisHost, _commandLineModel.RedisPort, _commandLineModel.RedisDB, _commandLineModel.RedisPassword);
+                throw new Exception("Could not find a running instance of Redis!!");
+            }
+
+            try
+            {               
+                
+                _redisConnectionManager = new RedisConnectionManager(_commandLineModel.RedisHost, _commandLineModel.RedisPort, _commandLineModel.RedisDB, _commandLineModel.RedisPassword);
                 try
                 {
-                    var redisDb = redisConnectionManager.GetDatabase();
+                    _redisDb = _redisConnectionManager.GetDatabase();
+                    _redisDb.Ping();
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Console.WriteLine(e);
-                    Process p = new Process();
-                    p.StartInfo.UseShellExecute = false;
-                    p.StartInfo.FileName = "redis-server";
-                    p.StartInfo.Arguments = "redis.windows.conf";
-                    p.Start();
+                    OnStop();
+                    throw new Exception("Redis communication failure.  Perhaps it's listening on a different port", ex);
                 }
-                finally
-                {
-                    redisConnectionManager.Dispose();
-                }*/
+
             }
             catch (Exception ex)
             {
+                OnStop();
                 throw new Exception("Failed to connect to Redis.", ex);
             }
+
+
+/*
+            var redisInfo = GetRedisInfoData();
+            if (!redisInfo.IsNullOrEmpty())
+            {
+                var redisLogger = RedisCliInfoParser.Parse(redisInfo);
+            }
+*/
+
 
             try
             {
@@ -88,7 +101,7 @@ namespace GDNetworkJSONService
                     Password = _commandLineModel.RedisPassword
                 };
 
-                var thread = new Thread(() => GuaranteedDeliveryThread.ThreadMethod(_guaranteedDeliveryThreadDelegate));
+                var thread = new Thread(() => GuaranteedDeliveryThread.ThreadMethod(_guaranteedDeliveryThreadDelegate, _redisDb));
                 thread.Start();
                 instrumentationlogger.PushInfoWithTime("Guaranteed Delivery Thread Started.");
 
@@ -102,11 +115,11 @@ namespace GDNetworkJSONService
                     Password = _commandLineModel.RedisPassword
                 };
 
-                thread = new Thread(() => GuaranteedDeliveryBackupThread.ThreadMethod(_guaranteedDeliveryThreadDelegate));
+                thread = new Thread(() => GuaranteedDeliveryBackupThread.ThreadMethod(_guaranteedDeliveryThreadDelegate, _redisDb));
                 thread.Start();
                 instrumentationlogger.PushInfoWithTime("Guaranteed Delivery Thread Started.");
 
-                //SetupDiagnosticsSchedule();
+                SetupDiagnosticsSchedule();
             }
             catch (Exception ex)
             {
@@ -114,6 +127,23 @@ namespace GDNetworkJSONService
             }
 
             instrumentationlogger.LogExecutionComplete(0);
+        }
+
+/*        private bool StartRedis()
+        {
+            Process p = new Process();
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.FileName = "redis-server.exe";
+            p.StartInfo.Arguments = "redis.windows.conf";
+            p.Start();
+            Thread.Sleep(3);
+            return VerifyRedisIsRunning();
+        }*/
+
+        private bool VerifyRedisIsRunning()
+        {
+            Process[] pname = Process.GetProcessesByName("redis-server");
+            return pname.Length > 0;
         }
 
         private void SetupDiagnosticsSchedule()
@@ -184,22 +214,9 @@ namespace GDNetworkJSONService
             var diagnosticsLogger = LoggerFactory.GetDiagnosticsInstrumentationLogger();
             diagnosticsLogger.LogItemsSentFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalSuccessCount, 0);
             diagnosticsLogger.LogItemsFailedFirstTry = Interlocked.Exchange(ref GuaranteedDeliveryThread.TotalFailedCount, 0);
-            //diagnosticsLogger.LogItemsSentOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalSuccessCount, 0);
-            //diagnosticsLogger.LogItemsFailedOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalFailedCount, 0);
+            diagnosticsLogger.LogItemsSentOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalSuccessCount, 0);
+            diagnosticsLogger.LogItemsFailedOnRetry = Interlocked.Exchange(ref GuaranteedDeliveryBackupThread.TotalFailedCount, 0);
             diagnosticsLogger.DiagnosticsIntervalMS = _diagnosticsInterval;
-/*
-            try
-            {
-                using (var dbConnection = LogStorageDbGlobals.OpenNewConnection())
-                {
-                    diagnosticsLogger.BacklogCount = LogStorageTable.GetBacklogCount(dbConnection);
-                    diagnosticsLogger.DeadLetterCount = DeadLetterLogStorageTable.GetDeadLetterCount(dbConnection);
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-*/
 
             if (AppSettingsHelper.SkipZeroDiagnostics)
             {
@@ -214,6 +231,46 @@ namespace GDNetworkJSONService
             {
                 diagnosticsLogger.LogFullDiagnostics();
             }
+
+            var redisInfo = GetRedisInfoData();
+            if (!redisInfo.IsNullOrEmpty())
+            {
+                var parser = new RedisCliInfoParser();
+                var redisInfoDict = RedisCliInfoParser.Parse(redisInfo);
+                var redisLogger = LoggerFactory.GetRedisMonitorLogger();
+                redisLogger.Stats = redisInfoDict;
+                redisLogger.LogStats();
+            }
+
+
+        }
+
+        private string GetRedisInfoData()
+        {
+            try
+            {
+                var ps = new ProcessStartInfo
+                {
+                    CreateNoWindow = true,
+                    WorkingDirectory = Directory.GetCurrentDirectory(),
+                    FileName = "redis-cli.exe",
+                    UseShellExecute = false,
+                    Arguments = "info",
+                    RedirectStandardOutput = true
+                };
+
+                var proc = Process.Start(ps);
+                string output = proc.StandardOutput.ReadToEnd();
+
+                proc.WaitForExit();
+                return output;
+            }
+            catch (Exception ex)
+            {
+                //ignore
+            }
+            return string.Empty;
+
         }
 
         protected override void OnStop()
@@ -224,11 +281,12 @@ namespace GDNetworkJSONService
             logger.InitializeExecutionLogging($"{this.GetRealServiceName(ServiceName)} Shutdown");
 
             _isRunning = false;
-            _guaranteedDeliveryThreadDelegate.RegisterThreadShutdown();
-            _guaranteedDeliveryBackupThreadDelegate.RegisterThreadShutdown();
+            _guaranteedDeliveryThreadDelegate?.RegisterThreadShutdown();
+            _guaranteedDeliveryBackupThreadDelegate?.RegisterThreadShutdown();
 
             var inc = 0;
-            while ((_guaranteedDeliveryThreadDelegate.IsRunning || _guaranteedDeliveryBackupThreadDelegate.IsRunning) && inc < 40)
+            while ((_guaranteedDeliveryThreadDelegate != null &&_guaranteedDeliveryThreadDelegate.IsRunning) 
+                        || (_guaranteedDeliveryBackupThreadDelegate != null && _guaranteedDeliveryBackupThreadDelegate.IsRunning) && inc < 40)
             {
                 numMs += 250;
                 Thread.Sleep(250);
@@ -236,7 +294,7 @@ namespace GDNetworkJSONService
             }
 
             // Waited max of 10 seconds and it is still running
-            if (inc == 40 && (_guaranteedDeliveryThreadDelegate.IsRunning || _guaranteedDeliveryBackupThreadDelegate.IsRunning))
+            if (inc == 40 && (_guaranteedDeliveryThreadDelegate != null && _guaranteedDeliveryThreadDelegate.IsRunning || _guaranteedDeliveryBackupThreadDelegate != null && _guaranteedDeliveryBackupThreadDelegate.IsRunning))
             {
                 logger.PushError("Guaranteed Delivery Thread(s) did not shut down in 10 seconds.");
                 logger.LogExecutionCompleteAsError(failedItemCount: 0);
@@ -246,6 +304,8 @@ namespace GDNetworkJSONService
                 logger.PushInfo($"Guaranteed Delivery Thread(s) shut down in {numMs} milliseconds.");
                 logger.LogExecutionComplete(0);
             }
+
+            _redisConnectionManager?.Dispose();
         }
 
         private string _realServiceName;
