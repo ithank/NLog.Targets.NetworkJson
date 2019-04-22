@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.ServiceProcess;
 using System.Threading;
 using GDNetworkJSONService;
@@ -75,6 +76,20 @@ namespace GDNetworkJSONService
             {
                 throw new Exception("SQLite Database Opening / Creation Failed.", ex);
             }
+
+
+            try
+            {
+                using (var dbConnection = LogStorageDbGlobals.OpenNewConnection())
+                {
+                    LogStorageDbGlobals.CompactDatabase(dbConnection);
+                }
+            }
+            catch (Exception ex)
+            {
+                instrumentationlogger.LogError("Compact Database on Startup failed.  Continuing on.", ex);
+            }
+
 
             try
             {

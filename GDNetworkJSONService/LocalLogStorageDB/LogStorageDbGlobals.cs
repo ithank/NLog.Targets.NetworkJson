@@ -19,6 +19,16 @@ namespace GDNetworkJSONService.LocalLogStorageDB
             return dbConnection;
         }
 
+
+        public static void CompactDatabase(SQLiteConnection conn)
+        {
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "vacuum";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         // Code does not appear to be necessary as SQLite appears to handle 
         // SQLite error (5): database is locked
         // all by itself.
